@@ -1,0 +1,110 @@
+
+name: Publicar jogos no GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Instalar Pygbag
+        run: python -m pip install --upgrade pygbag
+
+      - name: Preparar site
+        run: |
+          mkdir -p site/jogos
+          cp index.html site/index.html
+
+      - name: Compilar jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          pastas=(jogos/*/)
+
+          if [ ${#pastas[@]} -eq 0 ]; then
+            echo "Nenhuma pasta de jogo encontrada."
+            exit 1
+          fi
+
+          for d in "${pastas[@]}"; do
+            nome=$(basename "$d")
+
+            echo "Compilando $nome..."
+
+            if [ ! -f "$d/main.py" ]; then
+              echo "ERRO: $d/main.py não encontrado."
+              exit 1
+            fi
+
+            python -m pygbag --build "$d"
+
+            origem="$d/build/web"
+            destino="site/jogos/$nome"
+
+            if [ ! -f "$origem/index.html" ]; then
+              echo "ERRO: HTML não gerado para $nome."
+              exit 1
+            fi
+
+            mkdir -p "$destino"
+            cp -r "$origem/." "$destino/"
+
+            echo "OK: $nome"
+          done
+
+      - name: Verificar páginas
+        run: |
+          set -e
+
+          test -f site/index.html
+
+          for d in jogos/*/; do
+            nome=$(basename "$d")
+            test -f "site/jogos/$nome/index.html"
+            echo "Página encontrada: $nome"
+          done
+
+      - name: Enviar arquivos para publicação
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar site
+        id: deployment
+        uses: actions/deploy-pages@v4
