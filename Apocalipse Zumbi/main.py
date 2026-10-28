@@ -1,8 +1,7 @@
-
+import asyncio
 import pygame
 import random
 import math
-import sys
 
 pygame.init()
 
@@ -337,233 +336,236 @@ def reiniciar():
 
 
 # LOOP PRINCIPAL
-while True:
-    dt = relogio.tick(FPS)
+async def main():
+    global camera_x, camera_y, tempo_spawn, tempo_item, tempo_dano
+    global vida, municao, pontos, kits, jogo_ativo, vitoria
 
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+    while True:
+        dt = relogio.tick(FPS)
 
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_ESCAPE:
-                pygame.quit()
-                sys.exit()
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                return
 
-            if evento.key == pygame.K_r and not jogo_ativo:
-                reiniciar()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_r and not jogo_ativo:
+                    reiniciar()
 
-            if evento.key == pygame.K_SPACE and jogo_ativo and municao > 0:
-                mx, my = pygame.mouse.get_pos()
-                px = jogador.centerx - camera_x
-                py = jogador.centery - camera_y
+                if evento.key == pygame.K_SPACE and jogo_ativo and municao > 0:
+                    mx, my = pygame.mouse.get_pos()
+                    px = jogador.centerx - camera_x
+                    py = jogador.centery - camera_y
 
-                dx = mx - px
-                dy = my - py
-                dist = math.hypot(dx, dy)
+                    dx = mx - px
+                    dy = my - py
+                    dist = math.hypot(dx, dy)
+
+                    if dist > 0:
+                        balas.append({
+                            "x": float(jogador.centerx),
+                            "y": float(jogador.centery),
+                            "dx": dx / dist * 10,
+                            "dy": dy / dist * 10,
+                            "vida": 55
+                        })
+                        municao -= 1
+
+        if jogo_ativo:
+            teclas = pygame.key.get_pressed()
+
+            dx = 0
+            dy = 0
+
+            if teclas[pygame.K_w] or teclas[pygame.K_UP]:
+                dy -= velocidade
+            if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
+                dy += velocidade
+            if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
+                dx -= velocidade
+            if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
+                dx += velocidade
+
+            if dx != 0 and dy != 0:
+                dx *= 0.707
+                dy *= 0.707
+
+            jogador.x += int(dx)
+            jogador.y += int(dy)
+
+            jogador.clamp_ip(pygame.Rect(0, 0, MUNDO_LARGURA, MUNDO_ALTURA))
+
+            # Camera acompanha o jogador
+            camera_x = jogador.centerx - LARGURA // 2
+            camera_y = jogador.centery - ALTURA // 2
+
+            camera_x = max(0, min(MUNDO_LARGURA - LARGURA, camera_x))
+            camera_y = max(0, min(MUNDO_ALTURA - ALTURA, camera_y))
+
+            # Gerar zumbis
+            tempo_spawn += 1
+            if tempo_spawn > 75:
+                criar_zumbi()
+                tempo_spawn = 0
+
+            # Gerar suprimentos
+            tempo_item += 1
+            if tempo_item > 420:
+                criar_item()
+                tempo_item = 0
+
+            # Movimento dos zumbis
+            for z in zumbis[:]:
+                zx = z["x"] - jogador.centerx
+                zy = z["y"] - jogador.centery
+                dist = math.hypot(zx, zy)
 
                 if dist > 0:
-                    balas.append({
-                        "x": float(jogador.centerx),
-                        "y": float(jogador.centery),
-                        "dx": dx / dist * 10,
-                        "dy": dy / dist * 10,
-                        "vida": 55
-                    })
-                    municao -= 1
+                    z["x"] -= zx / dist * z["vel"]
+                    z["y"] -= zy / dist * z["vel"]
 
-    if jogo_ativo:
-        teclas = pygame.key.get_pressed()
+                rect_zumbi = pygame.Rect(int(z["x"]), int(z["y"]), 25, 28)
 
-        dx = 0
-        dy = 0
+                if jogador.colliderect(rect_zumbi):
+                    if tempo_dano <= 0:
+                        vida -= 10
+                        tempo_dano = 35
 
-        if teclas[pygame.K_w] or teclas[pygame.K_UP]:
-            dy -= velocidade
-        if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
-            dy += velocidade
-        if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
-            dx -= velocidade
-        if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
-            dx += velocidade
+            if tempo_dano > 0:
+                tempo_dano -= 1
 
-        if dx != 0 and dy != 0:
-            dx *= 0.707
-            dy *= 0.707
+            # Movimento das balas e dano nos zumbis
+            for bala in balas[:]:
+                bala["x"] += bala["dx"]
+                bala["y"] += bala["dy"]
+                bala["vida"] -= 1
 
-        jogador.x += int(dx)
-        jogador.y += int(dy)
+                if bala["vida"] <= 0:
+                    balas.remove(bala)
+                    continue
 
-        jogador.clamp_ip(pygame.Rect(0, 0, MUNDO_LARGURA, MUNDO_ALTURA))
+                bala_rect = pygame.Rect(
+                    int(bala["x"] - 3),
+                    int(bala["y"] - 3),
+                    6, 6
+                )
 
-        # Camera acompanha o jogador
-        camera_x = jogador.centerx - LARGURA // 2
-        camera_y = jogador.centery - ALTURA // 2
+                atingiu = False
 
-        camera_x = max(0, min(MUNDO_LARGURA - LARGURA, camera_x))
-        camera_y = max(0, min(MUNDO_ALTURA - ALTURA, camera_y))
+                for z in zumbis[:]:
+                    z_rect = pygame.Rect(int(z["x"]), int(z["y"]), 25, 28)
 
-        # Gerar zumbis
-        tempo_spawn += 1
-        if tempo_spawn > 75:
-            criar_zumbi()
-            tempo_spawn = 0
+                    if bala_rect.colliderect(z_rect):
+                        z["vida"] -= 1
+                        atingiu = True
 
-        # Gerar suprimentos
-        tempo_item += 1
-        if tempo_item > 420:
-            criar_item()
-            tempo_item = 0
+                        if z["vida"] <= 0:
+                            zumbis.remove(z)
+                            pontos += 10
 
-        # Movimento dos zumbis
-        for z in zumbis[:]:
-            zx = z["x"] - jogador.centerx
-            zy = z["y"] - jogador.centery
-            dist = math.hypot(zx, zy)
+                        break
 
-            if dist > 0:
-                z["x"] -= zx / dist * z["vel"]
-                z["y"] -= zy / dist * z["vel"]
+                if atingiu and bala in balas:
+                    balas.remove(bala)
 
-            rect_zumbi = pygame.Rect(int(z["x"]), int(z["y"]), 25, 28)
+            # Coletar itens
+            for item in itens[:]:
+                item_rect = pygame.Rect(int(item["x"]), int(item["y"]), 22, 22)
 
-            if jogador.colliderect(rect_zumbi):
-                if tempo_dano <= 0:
-                    vida -= 10
-                    tempo_dano = 35
+                if jogador.colliderect(item_rect):
+                    if item["tipo"] == "municao":
+                        municao += 15
+                    elif item["tipo"] == "vida":
+                        vida = min(100, vida + 25)
+                    else:
+                        kits += 1
+                        pontos += 5
 
-        if tempo_dano > 0:
-            tempo_dano -= 1
+                    itens.remove(item)
 
-        # Movimento das balas e dano nos zumbis
-        for bala in balas[:]:
-            bala["x"] += bala["dx"]
-            bala["y"] += bala["dy"]
-            bala["vida"] -= 1
+            if vida <= 0:
+                vida = 0
+                jogo_ativo = False
 
-            if bala["vida"] <= 0:
-                balas.remove(bala)
-                continue
+            # Objetivo de sobrevivencia
+            if pontos >= 500:
+                vitoria = True
+                jogo_ativo = False
 
-            bala_rect = pygame.Rect(
-                int(bala["x"] - 3),
-                int(bala["y"] - 3),
-                6, 6
+        # DESENHO
+        desenhar_chao()
+        desenhar_predios()
+
+        for item in itens:
+            desenhar_item(item)
+
+        for z in zumbis:
+            desenhar_zumbi(z)
+
+        desenhar_jogador()
+
+        # Balas
+        for bala in balas:
+            bx = int(bala["x"] - camera_x)
+            by = int(bala["y"] - camera_y)
+            pygame.draw.rect(tela, AMARELO, (bx, by, 6, 6))
+
+        # HUD
+        pygame.draw.rect(tela, (20, 20, 20), (12, 12, 245, 112))
+        desenhar_texto("SOBREVIVENTE", 22, 17, AMARELO)
+
+        pygame.draw.rect(tela, (70, 20, 20), (22, 48, 200, 18))
+        pygame.draw.rect(
+            tela, (50, 200, 70),
+            (22, 48, int(200 * vida / 100), 18)
+        )
+        desenhar_texto(f"VIDA: {vida}", 22, 70)
+        desenhar_texto(f"MUNICAO: {municao}", 22, 94)
+
+        desenhar_texto(f"PONTOS: {pontos}", LARGURA - 180, 20, AMARELO)
+        desenhar_texto(f"ZUMBIS: {len(zumbis)}", LARGURA - 180, 50)
+        desenhar_texto(f"KITS: {kits}", LARGURA - 180, 80, AZUL)
+
+        # Mira do mouse
+        if jogo_ativo:
+            mx, my = pygame.mouse.get_pos()
+            pygame.draw.rect(tela, BRANCO, (mx - 7, my, 15, 2))
+            pygame.draw.rect(tela, BRANCO, (mx, my - 7, 2, 15))
+
+        if not jogo_ativo:
+            camada = pygame.Surface((LARGURA, ALTURA))
+            camada.set_alpha(210)
+            camada.fill(PRETO)
+            tela.blit(camada, (0, 0))
+
+            if vitoria:
+                titulo = "VOCE SOBREVIVEU!"
+                cor_titulo = AMARELO
+            else:
+                titulo = "VOCE FOI DERROTADO"
+                cor_titulo = VERMELHO
+
+            imagem = fonte_grande.render(titulo, False, cor_titulo)
+            tela.blit(imagem, imagem.get_rect(center=(LARGURA // 2, 250)))
+
+            desenhar_texto(
+                f"Pontuacao final: {pontos}",
+                LARGURA // 2 - 100, 310, BRANCO
             )
 
-            atingiu = False
+            desenhar_texto(
+                "Pressione R para jogar novamente",
+                LARGURA // 2 - 145, 365, AMARELO
+            )
 
-            for z in zumbis[:]:
-                z_rect = pygame.Rect(int(z["x"]), int(z["y"]), 25, 28)
+        # Controles
+        if jogo_ativo:
+            desenhar_texto(
+                "WASD/SETAS: mover | MOUSE: mirar | ESPACO: atirar",
+                15, ALTURA - 28, BRANCO, fonte_pequena
+            )
 
-                if bala_rect.colliderect(z_rect):
-                    z["vida"] -= 1
-                    atingiu = True
+        pygame.display.flip()
+        await asyncio.sleep(0)
 
-                    if z["vida"] <= 0:
-                        zumbis.remove(z)
-                        pontos += 10
 
-                    break
-
-            if atingiu and bala in balas:
-                balas.remove(bala)
-
-        # Coletar itens
-        for item in itens[:]:
-            item_rect = pygame.Rect(int(item["x"]), int(item["y"]), 22, 22)
-
-            if jogador.colliderect(item_rect):
-                if item["tipo"] == "municao":
-                    municao += 15
-                elif item["tipo"] == "vida":
-                    vida = min(100, vida + 25)
-                else:
-                    kits += 1
-                    pontos += 5
-
-                itens.remove(item)
-
-        if vida <= 0:
-            vida = 0
-            jogo_ativo = False
-
-        # Objetivo de sobrevivencia
-        if pontos >= 500:
-            vitoria = True
-            jogo_ativo = False
-
-    # DESENHO
-    desenhar_chao()
-    desenhar_predios()
-
-    for item in itens:
-        desenhar_item(item)
-
-    for z in zumbis:
-        desenhar_zumbi(z)
-
-    desenhar_jogador()
-
-    # Balas
-    for bala in balas:
-        bx = int(bala["x"] - camera_x)
-        by = int(bala["y"] - camera_y)
-        pygame.draw.rect(tela, AMARELO, (bx, by, 6, 6))
-
-    # HUD
-    pygame.draw.rect(tela, (20, 20, 20), (12, 12, 245, 112))
-    desenhar_texto("SOBREVIVENTE", 22, 17, AMARELO)
-
-    pygame.draw.rect(tela, (70, 20, 20), (22, 48, 200, 18))
-    pygame.draw.rect(
-        tela, (50, 200, 70),
-        (22, 48, int(200 * vida / 100), 18)
-    )
-    desenhar_texto(f"VIDA: {vida}", 22, 70)
-    desenhar_texto(f"MUNICAO: {municao}", 22, 94)
-
-    desenhar_texto(f"PONTOS: {pontos}", LARGURA - 180, 20, AMARELO)
-    desenhar_texto(f"ZUMBIS: {len(zumbis)}", LARGURA - 180, 50)
-    desenhar_texto(f"KITS: {kits}", LARGURA - 180, 80, AZUL)
-
-    # Mira do mouse
-    if jogo_ativo:
-        mx, my = pygame.mouse.get_pos()
-        pygame.draw.rect(tela, BRANCO, (mx - 7, my, 15, 2))
-        pygame.draw.rect(tela, BRANCO, (mx, my - 7, 2, 15))
-
-    if not jogo_ativo:
-        camada = pygame.Surface((LARGURA, ALTURA))
-        camada.set_alpha(210)
-        camada.fill(PRETO)
-        tela.blit(camada, (0, 0))
-
-        if vitoria:
-            titulo = "VOCE SOBREVIVEU!"
-            cor_titulo = AMARELO
-        else:
-            titulo = "VOCE FOI DERROTADO"
-            cor_titulo = VERMELHO
-
-        imagem = fonte_grande.render(titulo, False, cor_titulo)
-        tela.blit(imagem, imagem.get_rect(center=(LARGURA // 2, 250)))
-
-        desenhar_texto(
-            f"Pontuacao final: {pontos}",
-            LARGURA // 2 - 100, 310, BRANCO
-        )
-
-        desenhar_texto(
-            "Pressione R para jogar novamente",
-            LARGURA // 2 - 145, 365, AMARELO
-        )
-
-    # Controles
-    if jogo_ativo:
-        desenhar_texto(
-            "WASD/SETAS: mover | MOUSE: mirar | ESPACO: atirar",
-            15, ALTURA - 28, BRANCO, fonte_pequena
-        )
-
-    pygame.display.flip()
+asyncio.run(main())
