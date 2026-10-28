@@ -9,7 +9,7 @@ pygame.init()
 # Configurações
 LARGURA, ALTURA = 1000, 600
 TELA = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("RETRO DOOM - FPS")
+pygame.display.set_caption("unit-0")
 RELOGIO = pygame.time.Clock()
 FONTE = pygame.font.SysFont("consolas", 24)
 FONTE_GRANDE = pygame.font.SysFont("consolas", 42, bold=True)
