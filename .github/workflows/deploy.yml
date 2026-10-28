@@ -1,0 +1,44 @@
+name: Publicar jogos
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pygbag
+
+      - name: Compilar jogos
+        run: |
+          mkdir -p site/jogos
+          for d in jogos/*/; do
+            nome=$(basename "$d")
+            python -m pygbag --build "$d"
+            mkdir -p "site/jogos/$nome"
+            cp -r "$d/build/web/." "site/jogos/$nome/"
+          done
+          cp index.html site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
