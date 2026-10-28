@@ -1,7 +1,7 @@
-
 import tkinter as tk
 import random
 import time
+import asyncio
 
 LARGURA = 500
 ALTURA = 600
@@ -64,7 +64,7 @@ def criar_fruta():
     frutas.append(fruta)
 
 
-def atualizar():
+async def atualizar():
     global pontos, velocidade, fim_de_jogo
     global ultimo_tempo, ultimo_spawn
 
@@ -118,9 +118,45 @@ def atualizar():
             tela.delete(fruta)
             frutas.remove(fruta)
 
-    # Limite de 60 atualizações por segundo
-    janela.after(max(1, int(TEMPO_FRAME * 1000)), atualizar)
+    # Permite ao asyncio executar outras tarefas sem bloquear a interface.
+    await asyncio.sleep(0)
+
+    # O Tkinter continua controlando a interface pelo agendador after().
+    janela.after(max(1, int(TEMPO_FRAME * 1000)), lambda: asyncio.create_task(atualizar()))
 
 
-atualizar()
-janela.mainloop()
+def iniciar_jogo():
+    asyncio.create_task(atualizar())
+
+
+# Integra o asyncio ao Tkinter sem bloquear a interface gráfica.
+loop_asyncio = asyncio.new_event_loop()
+
+
+def processar_asyncio():
+    if not janela.winfo_exists():
+        return
+
+    loop_asyncio.call_soon(loop_asyncio.stop)
+    loop_asyncio.run_forever()
+    janela.after(1, processar_asyncio)
+
+
+def iniciar_jogo():
+    loop_asyncio.create_task(atualizar())
+    processar_asyncio()
+
+
+def fechar_jogo():
+    for tarefa in asyncio.all_tasks(loop_asyncio):
+        tarefa.cancel()
+    loop_asyncio.stop()
+    loop_asyncio.close()
+    janela.destroy()
+
+
+janela.protocol("WM_DELETE_WINDOW", fechar_jogo)
+
+if __name__ == "__main__":
+    iniciar_jogo()
+    janela.mainloop()

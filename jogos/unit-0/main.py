@@ -1,4 +1,5 @@
 
+import asyncio
 import pygame
 import math
 import random
@@ -337,7 +338,7 @@ def tela_final(vitoria):
     pygame.display.flip()
 
 
-# Loop principal
+# Estado do jogo e captura do mouse
 rodando = True
 fim = False
 vitoria = False
@@ -346,92 +347,102 @@ ultimo_dano = 0
 pygame.event.set_grab(True)
 pygame.mouse.set_visible(False)
 
-while rodando:
-    dt = min(RELOGIO.tick(60) / 1000, 0.05)
 
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            rodando = False
+async def main():
+    global rodando, fim, vitoria, ultimo_dano
+    global px, py, angulo, vida, municao, pontos
 
-        elif evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_ESCAPE:
+    while rodando:
+        dt = min(RELOGIO.tick(60) / 1000, 0.05)
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
                 rodando = False
 
-            if not fim and evento.key == pygame.K_SPACE:
-                atirar()
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE:
+                    rodando = False
 
-        elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if not fim and evento.button == 1:
-                atirar()
+                if not fim and evento.key == pygame.K_SPACE:
+                    atirar()
 
-        elif evento.type == pygame.MOUSEMOTION and not fim:
-            angulo += evento.rel[0] * 0.003
-            angulo %= 2 * math.pi
+            elif evento.type == pygame.MOUSEBUTTONDOWN:
+                if not fim and evento.button == 1:
+                    atirar()
 
-    if not fim:
-        teclas = pygame.key.get_pressed()
+            elif evento.type == pygame.MOUSEMOTION and not fim:
+                angulo += evento.rel[0] * 0.003
+                angulo %= 2 * math.pi
 
-        velocidade = 160 * dt
+        if not fim:
+            teclas = pygame.key.get_pressed()
 
-        # WASD: andar e recuar
-        frente = 0
-        lado = 0
+            velocidade = 160 * dt
 
-        if teclas[pygame.K_w]:
-            frente += velocidade
-        if teclas[pygame.K_s]:
-            frente -= velocidade
-        if teclas[pygame.K_d]:
-            lado += velocidade
-        if teclas[pygame.K_a]:
-            lado -= velocidade
+            # WASD: andar e recuar
+            frente = 0
+            lado = 0
 
-        # Movimento relativo à direção da câmera
-        dx = (
-            math.cos(angulo) * frente
-            + math.cos(angulo + math.pi / 2) * lado
-        )
-        dy = (
-            math.sin(angulo) * frente
-            + math.sin(angulo + math.pi / 2) * lado
-        )
+            if teclas[pygame.K_w]:
+                frente += velocidade
+            if teclas[pygame.K_s]:
+                frente -= velocidade
+            if teclas[pygame.K_d]:
+                lado += velocidade
+            if teclas[pygame.K_a]:
+                lado -= velocidade
 
-        if not parede(px + dx, py):
-            px += dx
-        if not parede(px, py + dy):
-            py += dy
-
-        mover_inimigos(dt)
-
-        # Inimigos causam dano ao encostar
-        agora = pygame.time.get_ticks()
-
-        for inimigo in inimigos:
-            distancia = math.hypot(
-                inimigo["x"] - px,
-                inimigo["y"] - py
+            # Movimento relativo à direção da câmera
+            dx = (
+                math.cos(angulo) * frente
+                + math.cos(angulo + math.pi / 2) * lado
+            )
+            dy = (
+                math.sin(angulo) * frente
+                + math.sin(angulo + math.pi / 2) * lado
             )
 
-            if distancia < 35 and agora - ultimo_dano > 700:
-                vida = max(0, vida - 10)
-                ultimo_dano = agora
+            if not parede(px + dx, py):
+                px += dx
+            if not parede(px, py + dy):
+                py += dy
 
-        if vida <= 0:
-            fim = True
-            vitoria = False
-        elif not inimigos:
-            fim = True
-            vitoria = True
+            mover_inimigos(dt)
 
-        desenhar_cenario()
-        profundidades = raycast()
-        desenhar_inimigos(profundidades)
-        desenhar_arma()
-        desenhar_hud()
+            # Inimigos causam dano ao encostar
+            agora = pygame.time.get_ticks()
 
-    else:
-        tela_final(vitoria)
+            for inimigo in inimigos:
+                distancia = math.hypot(
+                    inimigo["x"] - px,
+                    inimigo["y"] - py
+                )
 
-    pygame.display.flip()
+                if distancia < 35 and agora - ultimo_dano > 700:
+                    vida = max(0, vida - 10)
+                    ultimo_dano = agora
 
-pygame.quit()
+            if vida <= 0:
+                fim = True
+                vitoria = False
+            elif not inimigos:
+                fim = True
+                vitoria = True
+
+            desenhar_cenario()
+            profundidades = raycast()
+            desenhar_inimigos(profundidades)
+            desenhar_arma()
+            desenhar_hud()
+
+        else:
+            tela_final(vitoria)
+
+        pygame.display.flip()
+        await asyncio.sleep(0)
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

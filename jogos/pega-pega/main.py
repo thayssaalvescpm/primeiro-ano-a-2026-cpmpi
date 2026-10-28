@@ -2,6 +2,8 @@
 import pygame
 import random
 import math
+import asyncio
+import sys
 
 pygame.init()
 
@@ -196,284 +198,292 @@ def reiniciar():
             random.randrange(130, mundo_h - 70), 20, 20
         ))
 
-rodando = True
+async def main():
+    global tempo, cristais_pego, fim, vitoria, mensagem
+    rodando = True
 
-while rodando:
-    dt = min(clock.tick(60) / 1000, 0.035)
-    tempo += dt
+    while rodando:
+        dt = min(clock.tick(60) / 1000, 0.035)
+        tempo += dt
 
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            rodando = False
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_ESCAPE:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
                 rodando = False
-            if evento.key == pygame.K_r and fim:
-                reiniciar()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE:
+                    rodando = False
+                if evento.key == pygame.K_r and fim:
+                    reiniciar()
 
-    teclas = pygame.key.get_pressed()
+        teclas = pygame.key.get_pressed()
 
-    if not fim:
-        controles = [
-            (int(teclas[pygame.K_d]) - int(teclas[pygame.K_a]),
-             int(teclas[pygame.K_s]) - int(teclas[pygame.K_w])),
-            (int(teclas[pygame.K_RIGHT]) - int(teclas[pygame.K_LEFT]),
-             int(teclas[pygame.K_DOWN]) - int(teclas[pygame.K_UP]))
-        ]
+        if not fim:
+            controles = [
+                (int(teclas[pygame.K_d]) - int(teclas[pygame.K_a]),
+                 int(teclas[pygame.K_s]) - int(teclas[pygame.K_w])),
+                (int(teclas[pygame.K_RIGHT]) - int(teclas[pygame.K_LEFT]),
+                 int(teclas[pygame.K_DOWN]) - int(teclas[pygame.K_UP]))
+            ]
 
-        for j, (dx, dy) in zip(jogadores, controles):
-            if dx and dy:
-                dx *= 0.707
-                dy *= 0.707
-            mover(j, dx, dy, dt)
+            for j, (dx, dy) in zip(jogadores, controles):
+                if dx and dy:
+                    dx *= 0.707
+                    dy *= 0.707
+                mover(j, dx, dy, dt)
 
-        # Coletar cristais
-        for c in cristais[:]:
-            for j in jogadores:
-                if j["r"].colliderect(c):
-                    cristais.remove(c)
-                    cristais_pego += 1
-                    j["pontos"] += 1
-                    explosao(c.centerx, c.centery, AZUL)
-                    mensagem = "Cristal magico coletado!"
-                    break
-
-        # Coletar moedas
-        for m in moedas[:]:
-            for j in jogadores:
-                if j["r"].colliderect(m):
-                    moedas.remove(m)
-                    j["pontos"] += 2
-                    explosao(m.centerx, m.centery, OURO)
-                    mensagem = "Moeda magica! +2 pontos!"
-                    break
-
-        # Pocoes
-        for p in pocoes[:]:
-            for j in jogadores:
-                if j["r"].colliderect(p) and j["vida"] < 3:
-                    j["vida"] += 1
-                    pocoes.remove(p)
-                    explosao(p.centerx, p.centery, VERDE)
-                    mensagem = "Vida recuperada!"
-                    break
-
-        # Inimigos perseguem as jogadoras
-        for e in inimigos:
-            alvo = min(jogadores, key=lambda j: math.hypot(
-                j["r"].centerx - e.centerx,
-                j["r"].centery - e.centery
-            ))
-
-            vx = alvo["r"].centerx - e.centerx
-            vy = alvo["r"].centery - e.centery
-            dist = math.hypot(vx, vy)
-
-            if 0 < dist < 330:
-                e.x += round(vx / dist * 70 * dt)
-                e.y += round(vy / dist * 70 * dt)
-
-            for j in jogadores:
-                if e.colliderect(j["r"]):
-                    if j.get("protecao", 0) <= 0:
-                        j["vida"] -= 1
-                        j["protecao"] = 1.5
-                        explosao(j["r"].centerx, j["r"].centery, ROSA)
-                        mensagem = j["nome"] + " foi atingida!"
-
-                        if j["vida"] <= 0:
-                            fim = True
-                            vitoria = False
+            # Coletar cristais
+            for c in cristais[:]:
+                for j in jogadores:
+                    if j["r"].colliderect(c):
+                        cristais.remove(c)
+                        cristais_pego += 1
+                        j["pontos"] += 1
+                        explosao(c.centerx, c.centery, AZUL)
+                        mensagem = "Cristal magico coletado!"
                         break
 
+            # Coletar moedas
+            for m in moedas[:]:
+                for j in jogadores:
+                    if j["r"].colliderect(m):
+                        moedas.remove(m)
+                        j["pontos"] += 2
+                        explosao(m.centerx, m.centery, OURO)
+                        mensagem = "Moeda magica! +2 pontos!"
+                        break
+
+            # Pocoes
+            for p in pocoes[:]:
+                for j in jogadores:
+                    if j["r"].colliderect(p) and j["vida"] < 3:
+                        j["vida"] += 1
+                        pocoes.remove(p)
+                        explosao(p.centerx, p.centery, VERDE)
+                        mensagem = "Vida recuperada!"
+                        break
+
+            # Inimigos perseguem as jogadoras
+            for e in inimigos:
+                alvo = min(jogadores, key=lambda j: math.hypot(
+                    j["r"].centerx - e.centerx,
+                    j["r"].centery - e.centery
+                ))
+
+                vx = alvo["r"].centerx - e.centerx
+                vy = alvo["r"].centery - e.centery
+                dist = math.hypot(vx, vy)
+
+                if 0 < dist < 330:
+                    e.x += round(vx / dist * 70 * dt)
+                    e.y += round(vy / dist * 70 * dt)
+
+                for j in jogadores:
+                    if e.colliderect(j["r"]):
+                        if j.get("protecao", 0) <= 0:
+                            j["vida"] -= 1
+                            j["protecao"] = 1.5
+                            explosao(j["r"].centerx, j["r"].centery, ROSA)
+                            mensagem = j["nome"] + " foi atingida!"
+
+                            if j["vida"] <= 0:
+                                fim = True
+                                vitoria = False
+                            break
+
+            for j in jogadores:
+                j["protecao"] = max(0, j.get("protecao", 0) - dt)
+
+            # Portal final
+            if cristais_pego >= 12:
+                juntas = all(math.hypot(
+                    j["r"].centerx - portal.centerx,
+                    j["r"].centery - portal.centery
+                ) < 140 for j in jogadores)
+
+                if juntas:
+                    fim = True
+                    vitoria = True
+
+        # Particulas
+        for p in particulas[:]:
+            p[0] += p[2] * dt
+            p[1] += p[3] * dt
+            p[3] += 150 * dt
+            p[4] -= dt
+            if p[4] <= 0:
+                particulas.remove(p)
+
+        # Camera acompanha as duas
+        cx = sum(j["r"].centerx for j in jogadores) / 2
+        cy = sum(j["r"].centery for j in jogadores) / 2
+        camx = max(0, min(mundo_w - W, cx - W / 2))
+        camy = max(0, min(mundo_h - H, cy - H / 2))
+
+        def pos(x, y):
+            return int(x - camx), int(y - camy)
+
+        # Fundo rosa
+        tela.fill((255, 230, 242))
+
+        # Flores
+        for x, y, cor in flores:
+            sx, sy = pos(x, y)
+            if -10 < sx < W + 10 and -10 < sy < H + 10:
+                pygame.draw.circle(tela, cor, (sx, sy), 3)
+                pygame.draw.circle(tela, OURO, (sx, sy), 1)
+
+        # Caminhos
+        caminhos = [
+            pygame.Rect(0, 430, mundo_w, 90),
+            pygame.Rect(600, 100, 90, mundo_h - 100),
+            pygame.Rect(600, 850, mundo_w - 600, 80)
+        ]
+
+        for c in caminhos:
+            sx, sy = pos(c.x, c.y)
+            pygame.draw.rect(tela, (255, 240, 225),
+                             (sx, sy, c.width, c.height))
+
+        # Arvores rosas
+        for x, y, r in [
+            (random_x, random_y, raio)
+            for random_x, random_y, raio in []
+        ]:
+            pass
+
+        # Decoracao fixa
+        for x, y in [(100, 280), (420, 450), (900, 300),
+                     (1200, 700), (800, 1100), (1600, 950)]:
+            sx, sy = pos(x, y)
+            pygame.draw.rect(tela, (145, 90, 90),
+                             (sx - 4, sy, 8, 24))
+            pygame.draw.circle(tela, (255, 155, 205), (sx, sy), 23)
+            pygame.draw.circle(tela, (255, 200, 225), (sx - 7, sy - 8), 12)
+
+        # Obstaculos
+        for o in obstaculos:
+            sx, sy = pos(o.x, o.y)
+            pygame.draw.rect(tela, (205, 125, 165),
+                             (sx + 5, sy + 5, o.width, o.height),
+                             border_radius=16)
+            pygame.draw.rect(tela, (255, 180, 215),
+                             (sx, sy, o.width, o.height),
+                             border_radius=16)
+            pygame.draw.rect(tela, (255, 235, 245),
+                             (sx + 8, sy + 8, o.width - 16, 10),
+                             border_radius=5)
+
+        # Portal
+        px, py = pos(portal.x, portal.y)
+        cor_portal = ROXO if cristais_pego >= 12 else (190, 65, 130)
+        pygame.draw.ellipse(tela, cor_portal,
+                            (px, py, portal.width, portal.height))
+        pygame.draw.ellipse(tela, BRANCO,
+                            (px + 12, py + 12, portal.width - 24,
+                             portal.height - 24))
+        pygame.draw.ellipse(tela, ROXO,
+                            (px + 25, py + 20, portal.width - 50,
+                             portal.height - 40))
+
+        # Cristais
+        for c in cristais:
+            sx, sy = pos(c.x, c.y)
+            brilho = math.sin(tempo * 4 + c.x) * 3
+            pygame.draw.polygon(tela, AZUL, [
+                (sx + 12, sy - 3 + brilho),
+                (sx + 24, sy + 10),
+                (sx + 12, sy + 25),
+                (sx, sy + 10)
+            ])
+            pygame.draw.line(tela, BRANCO,
+                             (sx + 12, sy), (sx + 12, sy + 19), 3)
+
+        # Moedas
+        for m in moedas:
+            sx, sy = pos(m.x, m.y)
+            pygame.draw.circle(tela, OURO, (sx + 10, sy + 10), 10)
+            pygame.draw.circle(tela, BRANCO, (sx + 10, sy + 10), 5)
+
+        # Pocoes
+        for p in pocoes:
+            sx, sy = pos(p.x, p.y)
+            pygame.draw.rect(tela, BRANCO, (sx + 5, sy, 14, 7))
+            pygame.draw.rect(tela, VERDE, (sx, sy + 6, 24, 22),
+                             border_radius=6)
+
+        # Monstrinhos
+        for e in inimigos:
+            sx, sy = pos(e.x, e.y)
+            pygame.draw.circle(tela, (235, 85, 145), (sx + 16, sy + 16), 17)
+            pygame.draw.circle(tela, BRANCO, (sx + 10, sy + 13), 5)
+            pygame.draw.circle(tela, BRANCO, (sx + 22, sy + 13), 5)
+            pygame.draw.circle(tela, PRETO, (sx + 10, sy + 13), 2)
+            pygame.draw.circle(tela, PRETO, (sx + 22, sy + 13), 2)
+
+        # Fadas
         for j in jogadores:
-            j["protecao"] = max(0, j.get("protecao", 0) - dt)
+            sx, sy = pos(j["r"].x, j["r"].y)
+            desenhar_fada(pygame.Rect(sx, sy, 32, 40),
+                          j["cor"], j["nome"])
 
-        # Portal final
-        if cristais_pego >= 12:
-            juntas = all(math.hypot(
-                j["r"].centerx - portal.centerx,
-                j["r"].centery - portal.centery
-            ) < 140 for j in jogadores)
+        # Particulas magicas
+        for p in particulas:
+            sx, sy = pos(p[0], p[1])
+            if 0 <= sx < W and 0 <= sy < H:
+                pygame.draw.circle(tela, p[5], (sx, sy),
+                                   max(1, int(5 * min(1, p[4] * 2))))
 
-            if juntas:
-                fim = True
-                vitoria = True
+        # Interface
+        pygame.draw.rect(tela, (255, 245, 252), (0, 0, W, 100))
+        pygame.draw.line(tela, ROSA, (0, 100), (W, 100), 3)
+        escrever("REINO ROSA MAGICO", 20, 10, ROSA, titulo)
+        escrever("Luna: WASD", 25, 62, ROSA)
+        escrever("Estrela: SETAS", 180, 62, ROXO)
 
-    # Particulas
-    for p in particulas[:]:
-        p[0] += p[2] * dt
-        p[1] += p[3] * dt
-        p[3] += 150 * dt
-        p[4] -= dt
-        if p[4] <= 0:
-            particulas.remove(p)
+        for i, j in enumerate(jogadores):
+            x = 570 + i * 205
+            escrever(j["nome"], x, 8, j["cor"])
+            escrever("Pontos: " + str(j["pontos"]),
+                     x, 36, PRETO, pygame.font.SysFont("arial", 16))
+            for n in range(3):
+                cor = ROSA if n < j["vida"] else (225, 205, 215)
+                pygame.draw.circle(tela, cor, (x + n * 22 + 5, 76), 7)
 
-    # Camera acompanha as duas
-    cx = sum(j["r"].centerx for j in jogadores) / 2
-    cy = sum(j["r"].centery for j in jogadores) / 2
-    camx = max(0, min(mundo_w - W, cx - W / 2))
-    camy = max(0, min(mundo_h - H, cy - H / 2))
+        escrever(f"Cristais: {cristais_pego}/12", 20, 110, ROSA)
+        escrever(
+            "Portal aberto! Vao juntas ate ele!" if cristais_pego >= 12
+            else "Coletem cristais, moedas e pocoes!",
+            20, 140, ROXO
+        )
 
-    def pos(x, y):
-        return int(x - camx), int(y - camy)
+        if mensagem:
+            pygame.draw.rect(tela, BRANCO, (250, 650, 500, 35),
+                             border_radius=12)
+            escrever(mensagem, 270, 657, ROSA)
 
-    # Fundo rosa
-    tela.fill((255, 230, 242))
+        if fim:
+            overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+            overlay.fill((70, 25, 80, 170))
+            tela.blit(overlay, (0, 0))
+            pygame.draw.rect(tela, BRANCO, (150, 210, 700, 260),
+                             border_radius=30)
 
-    # Flores
-    for x, y, cor in flores:
-        sx, sy = pos(x, y)
-        if -10 < sx < W + 10 and -10 < sy < H + 10:
-            pygame.draw.circle(tela, cor, (sx, sy), 3)
-            pygame.draw.circle(tela, OURO, (sx, sy), 1)
+            if vitoria:
+                escrever("MISSAO CONCLUIDA!", 290, 245, ROSA, titulo)
+                escrever("As amigas salvaram o reino!", 290, 315, ROXO)
+            else:
+                escrever("FIM DA AVENTURA", 320, 245, ROSA, titulo)
+                escrever("Tentem novamente!", 350, 315, ROXO)
 
-    # Caminhos
-    caminhos = [
-        pygame.Rect(0, 430, mundo_w, 90),
-        pygame.Rect(600, 100, 90, mundo_h - 100),
-        pygame.Rect(600, 850, mundo_w - 600, 80)
-    ]
+            escrever("Aperte R para recomecar", 340, 410, ROSA)
 
-    for c in caminhos:
-        sx, sy = pos(c.x, c.y)
-        pygame.draw.rect(tela, (255, 240, 225),
-                         (sx, sy, c.width, c.height))
+        pygame.display.flip()
 
-    # Arvores rosas
-    for x, y, r in [
-        (random_x, random_y, raio)
-        for random_x, random_y, raio in []
-    ]:
-        pass
+        # Permite que o asyncio processe outras tarefas assíncronas.
+        await asyncio.sleep(0)
 
-    # Decoracao fixa
-    for x, y in [(100, 280), (420, 450), (900, 300),
-                 (1200, 700), (800, 1100), (1600, 950)]:
-        sx, sy = pos(x, y)
-        pygame.draw.rect(tela, (145, 90, 90),
-                         (sx - 4, sy, 8, 24))
-        pygame.draw.circle(tela, (255, 155, 205), (sx, sy), 23)
-        pygame.draw.circle(tela, (255, 200, 225), (sx - 7, sy - 8), 12)
+    pygame.quit()
 
-    # Obstaculos
-    for o in obstaculos:
-        sx, sy = pos(o.x, o.y)
-        pygame.draw.rect(tela, (205, 125, 165),
-                         (sx + 5, sy + 5, o.width, o.height),
-                         border_radius=16)
-        pygame.draw.rect(tela, (255, 180, 215),
-                         (sx, sy, o.width, o.height),
-                         border_radius=16)
-        pygame.draw.rect(tela, (255, 235, 245),
-                         (sx + 8, sy + 8, o.width - 16, 10),
-                         border_radius=5)
 
-    # Portal
-    px, py = pos(portal.x, portal.y)
-    cor_portal = ROXO if cristais_pego >= 12 else (190, 65, 130)
-    pygame.draw.ellipse(tela, cor_portal,
-                        (px, py, portal.width, portal.height))
-    pygame.draw.ellipse(tela, BRANCO,
-                        (px + 12, py + 12, portal.width - 24,
-                         portal.height - 24))
-    pygame.draw.ellipse(tela, ROXO,
-                        (px + 25, py + 20, portal.width - 50,
-                         portal.height - 40))
-
-    # Cristais
-    for c in cristais:
-        sx, sy = pos(c.x, c.y)
-        brilho = math.sin(tempo * 4 + c.x) * 3
-        pygame.draw.polygon(tela, AZUL, [
-            (sx + 12, sy - 3 + brilho),
-            (sx + 24, sy + 10),
-            (sx + 12, sy + 25),
-            (sx, sy + 10)
-        ])
-        pygame.draw.line(tela, BRANCO,
-                         (sx + 12, sy), (sx + 12, sy + 19), 3)
-
-    # Moedas
-    for m in moedas:
-        sx, sy = pos(m.x, m.y)
-        pygame.draw.circle(tela, OURO, (sx + 10, sy + 10), 10)
-        pygame.draw.circle(tela, BRANCO, (sx + 10, sy + 10), 5)
-
-    # Pocoes
-    for p in pocoes:
-        sx, sy = pos(p.x, p.y)
-        pygame.draw.rect(tela, BRANCO, (sx + 5, sy, 14, 7))
-        pygame.draw.rect(tela, VERDE, (sx, sy + 6, 24, 22),
-                         border_radius=6)
-
-    # Monstrinhos
-    for e in inimigos:
-        sx, sy = pos(e.x, e.y)
-        pygame.draw.circle(tela, (235, 85, 145), (sx + 16, sy + 16), 17)
-        pygame.draw.circle(tela, BRANCO, (sx + 10, sy + 13), 5)
-        pygame.draw.circle(tela, BRANCO, (sx + 22, sy + 13), 5)
-        pygame.draw.circle(tela, PRETO, (sx + 10, sy + 13), 2)
-        pygame.draw.circle(tela, PRETO, (sx + 22, sy + 13), 2)
-
-    # Fadas
-    for j in jogadores:
-        sx, sy = pos(j["r"].x, j["r"].y)
-        desenhar_fada(pygame.Rect(sx, sy, 32, 40),
-                      j["cor"], j["nome"])
-
-    # Particulas magicas
-    for p in particulas:
-        sx, sy = pos(p[0], p[1])
-        if 0 <= sx < W and 0 <= sy < H:
-            pygame.draw.circle(tela, p[5], (sx, sy),
-                               max(1, int(5 * min(1, p[4] * 2))))
-
-    # Interface
-    pygame.draw.rect(tela, (255, 245, 252), (0, 0, W, 100))
-    pygame.draw.line(tela, ROSA, (0, 100), (W, 100), 3)
-    escrever("REINO ROSA MAGICO", 20, 10, ROSA, titulo)
-    escrever("Luna: WASD", 25, 62, ROSA)
-    escrever("Estrela: SETAS", 180, 62, ROXO)
-
-    for i, j in enumerate(jogadores):
-        x = 570 + i * 205
-        escrever(j["nome"], x, 8, j["cor"])
-        escrever("Pontos: " + str(j["pontos"]),
-                 x, 36, PRETO, pygame.font.SysFont("arial", 16))
-        for n in range(3):
-            cor = ROSA if n < j["vida"] else (225, 205, 215)
-            pygame.draw.circle(tela, cor, (x + n * 22 + 5, 76), 7)
-
-    escrever(f"Cristais: {cristais_pego}/12", 20, 110, ROSA)
-    escrever(
-        "Portal aberto! Vao juntas ate ele!" if cristais_pego >= 12
-        else "Coletem cristais, moedas e pocoes!",
-        20, 140, ROXO
-    )
-
-    if mensagem:
-        pygame.draw.rect(tela, BRANCO, (250, 650, 500, 35),
-                         border_radius=12)
-        escrever(mensagem, 270, 657, ROSA)
-
-    if fim:
-        overlay = pygame.Surface((W, H), pygame.SRCALPHA)
-        overlay.fill((70, 25, 80, 170))
-        tela.blit(overlay, (0, 0))
-        pygame.draw.rect(tela, BRANCO, (150, 210, 700, 260),
-                         border_radius=30)
-
-        if vitoria:
-            escrever("MISSAO CONCLUIDA!", 290, 245, ROSA, titulo)
-            escrever("As amigas salvaram o reino!", 290, 315, ROXO)
-        else:
-            escrever("FIM DA AVENTURA", 320, 245, ROSA, titulo)
-            escrever("Tentem novamente!", 350, 315, ROXO)
-
-        escrever("Aperte R para recomecar", 340, 410, ROSA)
-
-    pygame.display.flip()
-
-pygame.quit()
-sys.exit()
+if __name__ == "__main__":
+    asyncio.run(main())

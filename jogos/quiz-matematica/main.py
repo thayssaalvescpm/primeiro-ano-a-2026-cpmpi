@@ -1,4 +1,4 @@
-
+import asyncio
 import pygame
 import random
 import sys
@@ -107,116 +107,134 @@ botoes = [
     pygame.Rect(430, 400, 250, 70)
 ]
 
-while True:
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
 
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_ESCAPE:
-                pygame.quit()
-                sys.exit()
+async def main():
+    global estado
 
-            if estado == INICIO and evento.key == pygame.K_RETURN:
-                iniciar_jogo()
+    rodando = True
 
-            elif estado == FIM and evento.key == pygame.K_RETURN:
-                iniciar_jogo()
+    while rodando:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                rodando = False
+                break
 
-            elif estado == JOGANDO:
-                # Teclas 1, 2, 3 e 4 escolhem respostas
-                if evento.key in (
-                    pygame.K_1, pygame.K_2,
-                    pygame.K_3, pygame.K_4
-                ):
-                    indice = evento.key - pygame.K_1
-                    responder(alternativas[indice])
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE:
+                    rodando = False
+                    break
 
-        if evento.type == pygame.MOUSEBUTTONDOWN:
-            if estado == INICIO or estado == FIM:
-                iniciar_jogo()
+                if estado == INICIO and evento.key == pygame.K_RETURN:
+                    iniciar_jogo()
 
-            elif estado == JOGANDO:
-                for i, botao in enumerate(botoes):
-                    if botao.collidepoint(evento.pos):
-                        responder(alternativas[i])
+                elif estado == FIM and evento.key == pygame.K_RETURN:
+                    iniciar_jogo()
 
-    tela.fill(FUNDO)
+                elif estado == JOGANDO:
+                    # Teclas 1, 2, 3 e 4 escolhem respostas
+                    if evento.key in (
+                        pygame.K_1, pygame.K_2,
+                        pygame.K_3, pygame.K_4
+                    ):
+                        indice = evento.key - pygame.K_1
+                        responder(alternativas[indice])
 
-    if estado == INICIO:
-        escrever(
-            "DESAFIO DE MATEMATICA",
-            titulo, AZUL, 400, 170
-        )
-        escrever(
-            "Resolva perguntas faceis!",
-            fonte, PRETO, 400, 270
-        )
-        escrever(
-            "Voce tem 10 segundos por pergunta.",
-            fonte, PRETO, 400, 320
-        )
-        escrever(
-            "Pressione ENTER para comecar",
-            fonte_grande, VERDE, 400, 430
-        )
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if estado == INICIO or estado == FIM:
+                    iniciar_jogo()
 
-    elif estado == JOGANDO:
-        tempo_passado = (
-            pygame.time.get_ticks() - inicio_tempo
-        ) / 1000
-        tempo_restante = max(0, tempo_limite - tempo_passado)
+                elif estado == JOGANDO:
+                    for i, botao in enumerate(botoes):
+                        if botao.collidepoint(evento.pos):
+                            responder(alternativas[i])
 
-        escrever(
-            f"Pontuacao: {pontuacao}",
-            fonte, PRETO, 150, 40
-        )
-        escrever(
-            f"Tempo: {tempo_restante:.1f}s",
-            fonte, VERMELHO if tempo_restante < 4 else PRETO,
-            650, 40
-        )
+        if not rodando:
+            break
 
-        escrever(
-            pergunta, titulo, AZUL, 400, 190
-        )
+        tela.fill(FUNDO)
 
-        for i, botao in enumerate(botoes):
-            pygame.draw.rect(tela, BRANCO, botao, border_radius=12)
-            pygame.draw.rect(tela, AZUL, botao, 3, border_radius=12)
+        if estado == INICIO:
             escrever(
-                f"{i + 1}) {alternativas[i]}",
-                fonte_grande, PRETO,
-                botao.centerx, botao.centery
+                "DESAFIO DE MATEMATICA",
+                titulo, AZUL, 400, 170
+            )
+            escrever(
+                "Resolva perguntas faceis!",
+                fonte, PRETO, 400, 270
+            )
+            escrever(
+                "Voce tem 10 segundos por pergunta.",
+                fonte, PRETO, 400, 320
+            )
+            escrever(
+                "Pressione ENTER para comecar",
+                fonte_grande, VERDE, 400, 430
             )
 
-        escrever(
-            "Clique em uma resposta ou aperte 1, 2, 3 ou 4",
-            pygame.font.SysFont("arial", 20),
-            PRETO, 400, 530
-        )
+        elif estado == JOGANDO:
+            tempo_passado = (
+                pygame.time.get_ticks() - inicio_tempo
+            ) / 1000
+            tempo_restante = max(0, tempo_limite - tempo_passado)
 
-        if tempo_restante <= 0:
-            estado = FIM
+            escrever(
+                f"Pontuacao: {pontuacao}",
+                fonte, PRETO, 150, 40
+            )
+            escrever(
+                f"Tempo: {tempo_restante:.1f}s",
+                fonte, VERMELHO if tempo_restante < 4 else PRETO,
+                650, 40
+            )
 
-    elif estado == FIM:
-        escrever(
-            "FIM DE JOGO!",
-            titulo, VERMELHO, 400, 190
-        )
-        escrever(
-            f"Sua pontuacao: {pontuacao}",
-            fonte_grande, AZUL, 400, 290
-        )
-        escrever(
-            "Pressione ENTER para jogar novamente",
-            fonte, VERDE, 400, 390
-        )
-        escrever(
-            "Pressione ESC para sair",
-            fonte, PRETO, 400, 450
-        )
+            escrever(
+                pergunta, titulo, AZUL, 400, 190
+            )
 
-    pygame.display.flip()
-    relogio.tick(60)
+            for i, botao in enumerate(botoes):
+                pygame.draw.rect(tela, BRANCO, botao, border_radius=12)
+                pygame.draw.rect(tela, AZUL, botao, 3, border_radius=12)
+                escrever(
+                    f"{i + 1}) {alternativas[i]}",
+                    fonte_grande, PRETO,
+                    botao.centerx, botao.centery
+                )
+
+            escrever(
+                "Clique em uma resposta ou aperte 1, 2, 3 ou 4",
+                pygame.font.SysFont("arial", 20),
+                PRETO, 400, 530
+            )
+
+            if tempo_restante <= 0:
+                estado = FIM
+
+        elif estado == FIM:
+            escrever(
+                "FIM DE JOGO!",
+                titulo, VERMELHO, 400, 190
+            )
+            escrever(
+                f"Sua pontuacao: {pontuacao}",
+                fonte_grande, AZUL, 400, 290
+            )
+            escrever(
+                "Pressione ENTER para jogar novamente",
+                fonte, VERDE, 400, 390
+            )
+            escrever(
+                "Pressione ESC para sair",
+                fonte, PRETO, 400, 450
+            )
+
+        pygame.display.flip()
+        relogio.tick(60)
+
+        # Permite que o loop asyncio processe outras tarefas.
+        await asyncio.sleep(0)
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
