@@ -1,3 +1,4 @@
+import asyncio
 import math
 import random
 import pygame
@@ -1523,7 +1524,7 @@ class Jogo:
     # LOOP PRINCIPAL
     # ==================================================
 
-    def executar(self):
+    async def executar(self):
         rodando = True
 
         while rodando:
@@ -1575,6 +1576,9 @@ class Jogo:
             self.atualizar(dt)
             self.desenhar()
 
+            # Devolve o controle ao navegador, necessário em ambientes web.
+            await asyncio.sleep(0)
+
         pygame.quit()
 
 
@@ -1582,5 +1586,10 @@ class Jogo:
 # INÍCIO DO PROGRAMA
 # ==================================================
 
+async def main():
+    jogo = Jogo()
+    await jogo.executar()
+
+
 if __name__ == "__main__":
-    Jogo().executar()
+    asyncio.run(main())
