@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jogos Digitais · 1º Ano A · CPM-PI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #dcebff;
+    --ink: #1b1f3b;
+    --card: #ffffff;
+    --muted: #4a5070;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Nunito", system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  header, main, footer { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+  header { padding-top: 48px; padding-bottom: 24px; }
+  h1 {
+    font-family: "Fredoka", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 7vw, 4rem);
+    line-height: 1.05;
+    margin: 0 0 12px;
+  }
+  header p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 1.1rem; }
+  .grid {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  }
+  .game {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 5px 5px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .game:hover, .game:focus-visible { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+  .game:focus-visible { outline: 3px solid #f2b705; outline-offset: 3px; }
+  .cover {
+    display: grid;
+    place-items: center;
+    height: 120px;
+    font-size: 3.4rem;
+    border-bottom: 3px solid var(--ink);
+  }
+  .info { padding: 16px; display: flex; flex-direction: column; flex: 1; gap: 8px; }
+  .info h2 { font-family: "Fredoka", system-ui, sans-serif; font-size: 1.35rem; margin: 0; }
+  .info p { margin: 0; font-size: .95rem; color: var(--muted); flex: 1; }
+  .play {
+    align-self: flex-start;
+    background: var(--ink);
+    color: #fff;
+    font-family: "Fredoka", system-ui, sans-serif;
+    padding: 6px 16px;
+    border-radius: 999px;
+  }
+  .note {
+    margin: 32px 0 0;
+    padding: 16px 20px;
+    background: var(--card);
+    border-left: 6px solid #2f6fde;
+    border-radius: 8px;
+    max-width: 70ch;
+  }
+  footer { padding-top: 24px; padding-bottom: 40px; color: var(--muted); font-size: .9rem; }
+  @media (prefers-reduced-motion: reduce) { .game { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jogos digitais da turma</h1>
+  <p>Escolha um jogo e jogue direto no navegador. Feitos pelos estudantes do 1º Ano A do CPM-PI com Python, Pygame e ajuda de IA generativa.</p>
+</header>
+
+<main>
+  <ul class="grid">
+    <li><a class="game" href="jogos/apocalipse-zumbi/">
+      <div class="cover" style="background:#7fc66a">🧟</div>
+      <div class="info"><h2>Apocalipse Zumbi</h2><p>Sobrevivência em um cenário de apocalipse zumbi.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/campo-sombrio/">
+      <div class="cover" style="background:#a99be0">🌑</div>
+      <div class="info"><h2>Campo Sombrio</h2><p>Explore um campo escuro e enfrente os desafios do caminho.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/futsal/">
+      <div class="cover" style="background:#f5a469">⚽</div>
+      <div class="info"><h2>Futsal</h2><p>Um jogo inspirado no futsal.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/pega-fruta/">
+      <div class="cover" style="background:#ee8b8f">🍎</div>
+      <div class="info"><h2>Pega Fruta</h2><p>Colete as frutas para fazer pontos.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/pega-pega/">
+      <div class="cover" style="background:#f7d65c">🎯</div>
+      <div class="info"><h2>Pega Pega</h2><p>A brincadeira tradicional de pega-pega no mundo digital.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/quiz-matematica/">
+      <div class="cover" style="background:#7fd6d4">🧠</div>
+      <div class="info"><h2>Quiz de Matemática</h2><p>Perguntas e respostas para praticar matemática básica.</p><span class="play">Jogar</span></div>
+    </a></li>
+    <li><a class="game" href="jogos/unit-0/">
+      <div class="cover" style="background:#8fb3f5">🚀</div>
+      <div class="info"><h2>Unit 0</h2><p>Projeto de jogo criado nas aulas de programação.</p><span class="play">Jogar</span></div>
+    </a></li>
+  </ul>
+
+  <p class="note">Na primeira vez, cada jogo pode levar alguns segundos para carregar. Se a tela ficar parada, aguarde e clique dentro dela para ativar o teclado.</p>
+</main>
+
+<footer>CPM-PI · 1º Ano A · 2026 · Criado com ajuda de inteligência artificial generativa.</footer>
+</body>
+</html>

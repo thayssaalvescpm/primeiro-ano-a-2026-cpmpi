@@ -1,0 +1,131 @@
+name: Publicar jogos no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Instalar Pygbag
+        run: python -m pip install --upgrade pygbag
+
+      - name: Preparar pasta do site
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f index.html || { echo "::error::index.html não encontrado na raiz"; exit 1; }
+
+          mkdir -p site
+          rsync -a \
+            --exclude='.git' --exclude='.github' --exclude='site' \
+            --exclude='jogos' --exclude='*.md' \
+            ./ site/
+          mkdir -p site/jogos
+          touch site/.nojekyll
+
+      - name: Compilar jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          pastas=(jogos/*/)
+          if [ ${#pastas[@]} -eq 0 ]; then
+            echo "::error::nenhuma pasta de jogo encontrada em jogos/"
+            exit 1
+          fi
+
+          for d in "${pastas[@]}"; do
+            d="${d%/}"
+            nome=$(basename "$d")
+
+            echo "=================================="
+            echo "Compilando jogo: $nome"
+            echo "=================================="
+
+            if [[ ! "$nome" =~ ^[a-z][a-z0-9_-]*$ ]]; then
+              echo "::error::nome de pasta inválido: '$nome'. Use só minúsculas, números, - ou _, sem espaços/acentos."
+              exit 1
+            fi
+
+            if [ ! -f "$d/main.py" ]; then
+              echo "::error::$d/main.py não encontrado"
+              exit 1
+            fi
+
+            if ! grep -q "asyncio" "$d/main.py"; then
+              echo "::warning::$d/main.py não usa asyncio. O jogo pode travar no navegador (precisa de 'await asyncio.sleep(0)' no loop)."
+            fi
+
+            rm -rf "$d/build"
+            timeout 600 python -m pygbag --build "$d"
+
+            origem="$d/build/web"
+            destino="site/jogos/$nome"
+
+            if [ ! -f "$origem/index.html" ]; then
+              echo "::error::o Pygbag não gerou $origem/index.html"
+              find "$d/build" -maxdepth 3 -type f 2>/dev/null || true
+              exit 1
+            fi
+
+            mkdir -p "$destino"
+            cp -r "$origem/." "$destino/"
+            echo "OK: $nome -> $destino"
+          done
+
+      - name: Verificar arquivos publicados
+        shell: bash
+        run: |
+          set -euo pipefail
+          find site -maxdepth 4 -type f | sort
+
+          test -f site/index.html
+
+          for dir in site/jogos/*/; do
+            test -f "${dir}index.html" || { echo "::error::sem index.html em $dir"; exit 1; }
+            ls "${dir}"*.apk >/dev/null 2>&1 || { echo "::error::sem .apk em $dir"; exit 1; }
+            echo "OK: $dir"
+          done
+
+      - name: Enviar artefato do GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
