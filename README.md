@@ -2,6 +2,16 @@
 
 > **Projetos desenvolvidos por estudantes do 1º ano do CPM-PI durante o ano letivo de 2026.**
 
+## 🕹️ Acesse os Jogos
+
+Confira os jogos desenvolvidos pelos estudantes do 1º Ano A:
+
+<p align="center">
+  <a href="https://thayssaalvescpm.github.io/primeiro-ano-a-2026-cpmpi/">
+    <img src="https://img.shields.io/badge/🎮-JOGAR%20AGORA-blue?style=for-the-badge" alt="Acessar jogos">
+  </a>
+</p>
+
 ## 📖 Sobre o Projeto
 
 Este repositório reúne jogos digitais desenvolvidos pelos alunos do **1º ano A do CPM-PI**, como parte das atividades de aprendizagem relacionadas à programação e ao desenvolvimento de jogos digitais.
