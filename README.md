@@ -4,13 +4,11 @@
 
 ## 🕹️ Acesse os Jogos
 
-Confira os jogos desenvolvidos pelos estudantes do 1º Ano A:
+Os jogos desenvolvidos pelos estudantes estão disponíveis para acesso online:
 
-<p align="center">
-  <a href="https://thayssaalvescpm.github.io/primeiro-ano-a-2026-cpmpi/">
-    <img src="https://img.shields.io/badge/🎮-JOGAR%20AGORA-blue?style=for-the-badge" alt="Acessar jogos">
-  </a>
-</p>
+**[🎮 Clique aqui para acessar os jogos do 1º Ano A](https://thayssaalvescpm.github.io/primeiro-ano-a-2026-cpmpi/)**
+
+---
 
 ## 📖 Sobre o Projeto
 
