@@ -8,8 +8,6 @@ Os jogos desenvolvidos pelos estudantes estão disponíveis para acesso online:
 
 **[🎮 Clique aqui para acessar os jogos do 1º Ano A](https://thayssaalvescpm.github.io/primeiro-ano-a-2026-cpmpi/)**
 
----
-
 ## 📖 Sobre o Projeto
 
 Este repositório reúne jogos digitais desenvolvidos pelos alunos do **1º ano A do CPM-PI**, como parte das atividades de aprendizagem relacionadas à programação e ao desenvolvimento de jogos digitais.
