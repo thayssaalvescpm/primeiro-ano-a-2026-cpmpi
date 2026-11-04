@@ -88,10 +88,34 @@ Para executar os projetos, recomenda-se utilizar:
 - Computador com sistema operacional compatível com Python e Pygame.
 - Python **3.11.9**.
 - Thonny configurado para utilizar o Python 3.11.9.
-- Biblioteca Pygame instalada no ambiente Python selecionado.
+- Biblioteca **Pygame** instalada no ambiente Python selecionado.
+- Demais bibliotecas necessárias para cada projeto.
 - Arquivos `.py` disponíveis neste repositório.
 
-> **Importante:** a necessidade de arquivos adicionais, como imagens, fontes ou sons, depende de cada projeto. Caso algum jogo utilize esses recursos, eles também deverão estar disponíveis nos caminhos esperados pelo código.
+### 📚 Bibliotecas utilizadas
+
+Os projetos utilizam bibliotecas para implementação de recursos gráficos, cálculos, movimentação, eventos e lógica dos jogos.
+
+| Biblioteca | Descrição |
+|---|---|
+| `pygame` | Criação de jogos, gráficos, sons, eventos e controles. |
+| `random` | Geração de valores e eventos aleatórios. |
+| `math` | Operações matemáticas e cálculos geométricos. |
+| `sys` | Interação com funcionalidades do sistema. |
+| `time` | Controle de tempo e intervalos. |
+| `asyncio` | Execução assíncrona, utilizada em projetos adaptados para navegador. |
+
+**Observação:** As bibliotecas `random`, `math`, `sys`, `time` e `asyncio` fazem parte da biblioteca padrão do Python e não precisam ser instaladas separadamente.
+
+### ⚙️ Instalação
+
+Para instalar as dependências externas, utilize o terminal:
+
+```bash
+py -3.11 -m pip install pygame pygbag
+```
+
+Após a instalação, abra o arquivo `.py` desejado no Thonny, selecione o interpretador Python 3.11.9 e execute o projeto.
 
 ## 🚀 Como Executar os Jogos
 
